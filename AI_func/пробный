@@ -1,0 +1,313 @@
+import telebot
+from telebot import types
+import json
+import os
+from datetime import datetime
+import logging
+
+# Настройка логирования
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('bot.log', encoding='utf-8'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
+bot = telebot.TeleBot('8127036562:AAHDyx_ygbhVOTXrQcAqRlifYStmb1vDLMA')
+ADMIN_ID = 1707332723
+ORDERS_FILE = 'orders.json'
+
+
+def save_order(order_data):
+    try:
+        orders = load_orders()
+        orders.append(order_data)
+        with open(ORDERS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(orders, f, ensure_ascii=False, indent=2)
+        logger.info("Заказ сохранен: %s", order_data['order_data']['total'])
+    except Exception as e:
+        logger.error("Ошибка сохранения: %s", e)
+
+
+def load_orders():
+    try:
+        if os.path.exists(ORDERS_FILE):
+            with open(ORDERS_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        return []
+    except:
+        return []
+
+
+def send_admin_notification(user_info, order_data):
+    try:
+        logger.info("Отправка уведомления админу %s", ADMIN_ID)
+
+        message = (
+            "НОВЫЙ ЗАКАЗ!\n\n"
+            "Данные клиента:\n"
+        )
+
+        # Основная информация
+        message += f"• Имя: {user_info.get('name', user_info.get('first_name', 'Не указано'))}\n"
+        if user_info.get('last_name'):
+            message += f"• Фамилия: {user_info['last_name']}\n"
+        message += f"• Телефон: {user_info.get('phone', 'Не указан')}\n"
+
+        # Дополнительная информация
+        if user_info.get('email'):
+            message += f"• Email: {user_info['email']}\n"
+        if user_info.get('address'):
+            message += f"• Адрес: {user_info['address']}\n"
+
+        # Telegram информация
+        message += f"• Telegram ID: {user_info['id']}\n"
+        if user_info.get('username'):
+            message += f"• @{user_info['username']}\n"
+
+        # Информация о заказе
+        message += f"\nЗаказ:\n"
+        message += f"• Товаров: {len(order_data['items'])}\n"
+        message += f"• Сумма: {order_data['total']}₽\n"
+        message += f"• Время: {order_data['timestamp']}\n\n"
+
+        message += "Состав заказа:\n"
+        for i, item in enumerate(order_data['items'], 1):
+            message += f"{i}. {item['name']} - {item['price']}₽\n"
+
+        # Отправляем админу
+        bot.send_message(ADMIN_ID, message)
+        logger.info("Уведомление с данными клиента отправлено")
+
+        # Сохраняем заказ
+        full_order_data = {
+            'user_info': user_info,
+            'order_data': order_data,
+            'date': datetime.now().isoformat()
+        }
+        save_order(full_order_data)
+
+    except Exception as e:
+        logger.error("Ошибка отправки уведомления: %s", e)
+
+
+@bot.message_handler(commands=['start'])
+def start(message):
+    logger.info("/start от %s", message.from_user.id)
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.add(types.KeyboardButton('Открыть маркетплейс'))
+
+    bot.send_message(
+        message.chat.id,
+        "Добро пожаловать в AI Taobao Assistant!\n\n"
+        "Нажмите кнопку ниже чтобы открыть мини-приложение с маркетплейсом:",
+        reply_markup=markup
+    )
+
+
+@bot.message_handler(func=lambda message: message.text == 'Открыть маркетплейс')
+def open_marketplace(message):
+    logger.info("Открытие маркетплейса %s", message.from_user.id)
+
+    markup = types.InlineKeyboardMarkup()
+    web_app = types.WebAppInfo(url='https://beggab.github.io/StoreChina-/')
+    button = types.InlineKeyboardButton(text='Открыть магазин', web_app=web_app)
+    markup.add(button)
+
+    bot.send_message(
+        message.chat.id,
+        "Нажмите кнопку ниже чтобы открыть магазин:",
+        reply_markup=markup
+    )
+
+
+@bot.message_handler(content_types=['web_app_data'])
+def handle_web_app_data(message):
+    try:
+        logger.info("WEB_APP_DATA от %s", message.from_user.id)
+        logger.info("Raw data: %s", message.web_app_data.data)
+
+        data = json.loads(message.web_app_data.data)
+        logger.info("Parsed data: %s", data)
+
+        if data.get('action') == 'checkout':
+            # Данные пользователя из формы
+            user_data = data.get('user', {})
+            total = data.get('total', 0)
+            items = data.get('items', [])
+
+            logger.info("Заказ: %s товаров, %s руб", len(items), total)
+
+            # Информация о пользователе из Telegram
+            telegram_user_info = {
+                'id': message.from_user.id,
+                'first_name': message.from_user.first_name,
+                'last_name': message.from_user.last_name,
+                'username': message.from_user.username
+            }
+
+            # Объединяем данные
+            full_user_info = {**telegram_user_info, **user_data}
+
+            order_data = {
+                'items': items,
+                'total': total,
+                'timestamp': datetime.now().strftime('%d.%m.%Y %H:%M:%S')
+            }
+
+            # Отправляем уведомление с полной информацией
+            send_admin_notification(full_user_info, order_data)
+
+            # Подтверждение пользователю
+            bot.send_message(
+                message.chat.id,
+                f"✅ Заказ оформлен!\n\n"
+                f"💵 Сумма: {total}₽\n"
+                f"📦 Товаров: {len(items)}\n\n"
+                f"Администратор свяжется с вами для подтверждения заказа."
+            )
+
+            logger.info("Заказ от пользователя %s обработан", message.from_user.id)
+
+    except Exception as e:
+        logger.error("Ошибка обработки WebApp данных: %s", e)
+        bot.send_message(message.chat.id, "❌ Ошибка обработки заказа")
+
+
+@bot.message_handler(commands=['orders'])
+def show_orders(message):
+    if message.from_user.id != ADMIN_ID:
+        bot.send_message(message.chat.id, "❌ Эта команда только для администратора")
+        return
+
+    orders = load_orders()
+    if not orders:
+        bot.send_message(message.chat.id, "📭 Нет заказов")
+        return
+
+    bot.send_message(message.chat.id, f"📦 Всего заказов: {len(orders)}")
+
+    for i, order in enumerate(orders[-5:], 1):
+        user = order['user_info']
+        order_data = order['order_data']
+
+        order_text = (
+            f"Заказ #{i}\n"
+            f"👤 {user.get('name', user.get('first_name', 'Клиент'))}\n"
+            f"📞 {user.get('phone', 'Телефон не указан')}\n"
+            f"💵 {order_data['total']}₽\n"
+            f"🕐 {order_data['timestamp']}\n"
+            f"➖➖➖➖➖"
+        )
+
+        bot.send_message(message.chat.id, order_text)
+
+
+@bot.message_handler(commands=['order'])
+def order_detail(message):
+    if message.from_user.id != ADMIN_ID:
+        return
+
+    try:
+        orders = load_orders()
+        if not orders:
+            bot.send_message(message.chat.id, "📭 Нет заказов")
+            return
+
+        # Показываем последний заказ
+        last_order = orders[-1]
+        user = last_order['user_info']
+        order_data = last_order['order_data']
+
+        detail_text = (
+            "📦 ПОСЛЕДНИЙ ЗАКАЗ\n\n"
+            f"👤 Клиент: {user.get('name', user.get('first_name', 'Клиент'))}\n"
+            f"📞 Телефон: {user.get('phone', 'Не указан')}\n"
+        )
+
+        if user.get('email'):
+            detail_text += f"📧 Email: {user['email']}\n"
+        if user.get('address'):
+            detail_text += f"🏠 Адрес: {user['address']}\n"
+
+        detail_text += (
+            f"🆔 TG ID: {user['id']}\n"
+            f"📞 @{user.get('username', 'нет')}\n\n"
+            f"💵 Сумма: {order_data['total']}₽\n"
+            f"📦 Товаров: {len(order_data['items'])}\n"
+            f"🕐 Время: {order_data['timestamp']}\n\n"
+            "📋 Состав:\n"
+        )
+
+        for item in order_data['items']:
+            detail_text += f"• {item['name']} - {item['price']}₽\n"
+
+        bot.send_message(message.chat.id, detail_text)
+
+    except Exception as e:
+        bot.send_message(message.chat.id, f"❌ Ошибка: {e}")
+
+
+@bot.message_handler(commands=['status'])
+def status(message):
+    """Проверка статуса бота"""
+    orders = load_orders()
+    info = (
+        f"🤖 Статус бота\n"
+        f"👑 Админ ID: {ADMIN_ID}\n"
+        f"👤 Ваш ID: {message.from_user.id}\n"
+        f"📦 Заказов: {len(orders)}\n"
+        f"🕐 Время: {datetime.now().strftime('%H:%M:%S')}"
+    )
+    bot.send_message(message.chat.id, info)
+
+
+@bot.message_handler(commands=['help'])
+def help_command(message):
+    help_text = """
+🤖 AI Taobao Assistant - Помощь
+
+📋 Команды:
+/start - Запустить бота
+/help - Помощь
+/status - Статус бота
+/orders - Список заказов (админ)
+/order - Детали последнего заказа (админ)
+
+🎯 Как использовать:
+1. Нажмите "Открыть маркетплейс"
+2. Заполните данные регистрации
+3. Выбирайте товары и добавляйте в корзину
+4. Оформляйте заказ
+"""
+    bot.send_message(message.chat.id, help_text)
+
+
+@bot.message_handler(commands=['clear'])
+def clear_orders(message):
+    if message.from_user.id != ADMIN_ID:
+        return
+
+    try:
+        if os.path.exists(ORDERS_FILE):
+            os.remove(ORDERS_FILE)
+            bot.send_message(message.chat.id, "✅ База заказов очищена")
+        else:
+            bot.send_message(message.chat.id, "📭 База заказов уже пуста")
+    except Exception as e:
+        bot.send_message(message.chat.id, f"❌ Ошибка: {e}")
+
+
+if __name__ == '__main__':
+    logger.info("=" * 50)
+    logger.info("Бот запущен")
+    logger.info("Админ ID: %s", ADMIN_ID)
+    logger.info("=" * 50)
+
+    try:
+        bot.polling(none_stop=True, interval=1, timeout=30)
+    except Exception as e:
+        logger.error("Ошибка бота: %s", e)
