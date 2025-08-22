@@ -6,6 +6,7 @@
     <title>AI Taobao Assistant</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+        /* Стили остаются без изменений */
         * {
             margin: 0;
             padding: 0;
@@ -392,7 +393,7 @@
                     timestamp: new Date().toISOString()
                 }));
                 
-                alert(`🎉 Заказ оформлен!\nТоваров: ${cart.length}\nСумма: ${total}₽`);
+                alert(`🎉 Заказ оформлен!\nТоваров: ${cart.length}\nСумма: ${total}₽\n\nАдминистратор свяжется с вами для подтверждения.`);
                 cart = [];
                 updateCart();
             } else {
