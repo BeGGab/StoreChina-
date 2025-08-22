@@ -173,7 +173,7 @@
             color: white; 
             border: none; 
             padding: 10px 15px; 
-            border-radius: 20px; 
+            borderRadius: 20px; 
             cursor: pointer; 
             width: 100%; 
             font-weight: bold;
@@ -246,6 +246,10 @@
         .hidden {
             display: none;
         }
+        
+        .visible {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -286,7 +290,7 @@
             </button>
         </div>
 
-        <!-- Поиск и товары (скрыто до регистрации) -->
+        <!-- Поиск и товары -->
         <div id="mainContent" class="hidden">
             <div class="search-box">
                 <input type="text" class="search-input" placeholder="🔍 Что ищете?" id="searchInput">
@@ -295,7 +299,7 @@
 
             <div id="productsContainer" class="products-grid">
                 <div class="loading">
-                    <p>🤖 Введите запрос для поиска...</p>
+                    <p>🎯 Выберите товары из каталога</p>
                 </div>
             </div>
 
@@ -324,7 +328,8 @@
                 price: 1250, 
                 image: 'https://via.placeholder.com/300x300/4A90E2/white?text=Часы', 
                 rating: 4.8, 
-                store: 'Official Store' 
+                store: 'Official Store',
+                description: 'Умные часы с функцией отслеживания здоровья'
             },
             { 
                 id: 2, 
@@ -332,12 +337,51 @@
                 price: 890, 
                 image: 'https://via.placeholder.com/300x300/50C878/white?text=Наушники', 
                 rating: 4.6, 
-                store: 'TechGadgets' 
+                store: 'TechGadgets',
+                description: 'Беспроводные наушники с шумоподавлением'
+            },
+            { 
+                id: 3, 
+                name: 'Портативная колонка', 
+                price: 670, 
+                image: 'https://via.placeholder.com/300x300/FF6B6B/white?text=Колонка', 
+                rating: 4.5, 
+                store: 'AudioPro',
+                description: 'Мощная портативная колонка с Bluetooth'
+            },
+            { 
+                id: 4, 
+                name: 'Смартфон Xiaomi', 
+                price: 15400, 
+                image: 'https://via.placeholder.com/300x300/FFA500/white?text=Телефон', 
+                rating: 4.7, 
+                store: 'Xiaomi Official',
+                description: 'Флагманский смартфон с лучшей камерой'
+            },
+            { 
+                id: 5, 
+                name: 'Фитнес-браслет', 
+                price: 560, 
+                image: 'https://via.placeholder.com/300x300/20B2AA/white?text=Фитнес', 
+                rating: 4.4, 
+                store: 'HealthCare',
+                description: 'Трекер активности и сна'
+            },
+            { 
+                id: 6, 
+                name: 'Игровая мышь', 
+                price: 1200, 
+                image: 'https://via.placeholder.com/300x300/9370DB/white?text=Мышь', 
+                rating: 4.9, 
+                store: 'GamingTech',
+                description: 'Высокоточная игровая мышь'
             }
         ];
 
         // Инициализация
         function initApp() {
+            console.log('Документ загружен');
+            
             try {
                 if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
                     Telegram.WebApp.ready();
@@ -351,6 +395,11 @@
 
             loadUserData();
             products = mockProducts;
+            
+            // Показываем товары сразу если пользователь зарегистрирован
+            if (userData.name) {
+                displayProducts(products);
+            }
         }
 
         // Загрузка данных пользователя
@@ -388,7 +437,7 @@
             localStorage.setItem('userData', JSON.stringify(userData));
             showUserInfo();
             showMainContent();
-            alert('✅ Данные сохранены!');
+            alert('✅ Данные сохранены! Теперь вы можете делать заказы.');
         }
 
         // Показать информацию о пользователе
@@ -411,6 +460,7 @@
             
             userInfoDisplay.innerHTML = infoHTML;
             userInfoSection.classList.remove('hidden');
+            userInfoSection.classList.add('visible');
         }
 
         // Редактирование данных
@@ -450,7 +500,8 @@
 
             const filtered = mockProducts.filter(p => 
                 p.name.toLowerCase().includes(query) || 
-                p.store.toLowerCase().includes(query)
+                p.store.toLowerCase().includes(query) ||
+                p.description.toLowerCase().includes(query)
             );
             displayProducts(filtered.length ? filtered : mockProducts);
         }
@@ -470,6 +521,7 @@
                     <div class="product-price">${product.price}₽</div>
                     <div class="product-rating">⭐ ${product.rating}</div>
                     <div class="product-store">🏪 ${product.store}</div>
+                    <div style="font-size: 12px; color: #666; margin-bottom: 10px;">${product.description}</div>
                     <button class="add-to-cart" onclick="addToCart(${product.id})">
                         🛒 В корзину
                     </button>
