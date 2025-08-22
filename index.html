@@ -6,13 +6,20 @@
     <title>AI Taobao Assistant</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+        
         body { 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh; 
             padding: 20px; 
+            color: #333;
         }
+        
         .container { 
             max-width: 100%; 
             background: white; 
@@ -20,6 +27,7 @@
             padding: 15px; 
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
+        
         .header { 
             text-align: center; 
             margin-bottom: 20px; 
@@ -28,8 +36,18 @@
             border-radius: 12px; 
             color: white; 
         }
-        .header h1 { margin-bottom: 8px; font-size: 1.5em; }
-        .search-box { display: flex; margin-bottom: 20px; gap: 10px; }
+        
+        .header h1 { 
+            margin-bottom: 8px; 
+            font-size: 1.5em; 
+        }
+        
+        .search-box { 
+            display: flex; 
+            margin-bottom: 20px; 
+            gap: 10px; 
+        }
+        
         .search-input { 
             flex: 1; 
             padding: 12px 15px; 
@@ -37,6 +55,7 @@
             border-radius: 20px; 
             font-size: 14px; 
         }
+        
         .search-btn { 
             padding: 12px 20px; 
             background: #28a745; 
@@ -44,19 +63,28 @@
             border: none; 
             border-radius: 20px; 
             cursor: pointer; 
+            font-weight: bold;
         }
+        
         .products-grid { 
             display: grid; 
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
             gap: 15px; 
             margin-bottom: 20px; 
         }
+        
         .product-card { 
             background: #f8f9fa; 
             border-radius: 12px; 
             padding: 12px; 
             text-align: center; 
+            transition: transform 0.2s ease;
         }
+        
+        .product-card:hover { 
+            transform: translateY(-2px); 
+        }
+        
         .product-image { 
             width: 100%; 
             height: 150px; 
@@ -64,10 +92,31 @@
             border-radius: 8px; 
             margin-bottom: 10px; 
         }
-        .product-name { font-weight: bold; margin-bottom: 8px; }
-        .product-price { color: #e74c3c; font-weight: bold; margin-bottom: 8px; }
-        .product-rating { color: #f39c12; margin-bottom: 8px; }
-        .product-store { color: #666; font-size: 0.9em; margin-bottom: 12px; }
+        
+        .product-name { 
+            font-weight: bold; 
+            margin-bottom: 8px; 
+            font-size: 1.1em;
+        }
+        
+        .product-price { 
+            color: #e74c3c; 
+            font-weight: bold; 
+            margin-bottom: 8px; 
+            font-size: 1.2em;
+        }
+        
+        .product-rating { 
+            color: #f39c12; 
+            margin-bottom: 8px; 
+        }
+        
+        .product-store { 
+            color: #666; 
+            font-size: 0.9em; 
+            margin-bottom: 12px; 
+        }
+        
         .add-to-cart { 
             background: #667eea; 
             color: white; 
@@ -76,7 +125,14 @@
             border-radius: 20px; 
             cursor: pointer; 
             width: 100%; 
+            font-weight: bold;
+            transition: background 0.2s ease;
         }
+        
+        .add-to-cart:hover { 
+            background: #5a67d8; 
+        }
+        
         .cart-section { 
             background: #fff; 
             border-radius: 12px; 
@@ -84,10 +140,35 @@
             margin-top: 20px; 
             border: 2px solid #e9ecef; 
         }
-        .cart-header { text-align: center; margin-bottom: 15px; }
-        .cart-items { max-height: 150px; overflow-y: auto; margin-bottom: 15px; }
-        .cart-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; }
-        .cart-total { font-weight: bold; text-align: center; margin-bottom: 15px; color: #e74c3c; }
+        
+        .cart-header { 
+            text-align: center; 
+            margin-bottom: 15px; 
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        
+        .cart-items { 
+            max-height: 150px; 
+            overflow-y: auto; 
+            margin-bottom: 15px; 
+        }
+        
+        .cart-item { 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 8px; 
+            border-bottom: 1px solid #eee; 
+        }
+        
+        .cart-total { 
+            font-weight: bold; 
+            text-align: center; 
+            margin-bottom: 15px; 
+            color: #e74c3c; 
+            font-size: 1.2em;
+        }
+        
         .checkout-btn { 
             background: #28a745; 
             color: white; 
@@ -96,8 +177,29 @@
             border-radius: 20px; 
             cursor: pointer; 
             width: 100%; 
+            font-weight: bold;
+            font-size: 1.1em;
+            transition: background 0.2s ease;
         }
-        .loading, .empty-cart { text-align: center; padding: 20px; color: #666; }
+        
+        .checkout-btn:hover { 
+            background: #218838; 
+        }
+        
+        .loading, .empty-cart { 
+            text-align: center; 
+            padding: 20px; 
+            color: #666; 
+        }
+        
+        .debug-info {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 12px;
+            color: #666;
+        }
     </style>
 </head>
 <body>
@@ -126,25 +228,77 @@
             <div id="cartTotal" class="cart-total">Итого: 0₽</div>
             <button class="checkout-btn" onclick="checkout()">✅ Оформить заказ</button>
         </div>
+
+        <div class="debug-info" id="debugInfo">
+            Статус: Загрузка...
+        </div>
     </div>
 
     <script>
         let cart = [];
         let products = [];
+        let webAppAvailable = false;
+
+        // Mock данные товаров
         const mockProducts = [
-            { id: 1, name: 'Умные часы', price: 1250, image: 'https://via.placeholder.com/300x300/4A90E2/white?text=Часы', rating: 4.8, store: 'Official Store' },
-            { id: 2, name: 'Наушники', price: 890, image: 'https://via.placeholder.com/300x300/50C878/white?text=Наушники', rating: 4.6, store: 'TechGadgets' },
-            { id: 3, name: 'Колонка', price: 670, image: 'https://via.placeholder.com/300x300/FF6B6B/white?text=Колонка', rating: 4.5, store: 'AudioPro' },
-            { id: 4, name: 'Смартфон', price: 15400, image: 'https://via.placeholder.com/300x300/FFA500/white?text=Телефон', rating: 4.7, store: 'Xiaomi' }
+            { 
+                id: 1, 
+                name: 'Умные часы SmartWatch Pro', 
+                price: 1250, 
+                image: 'https://via.placeholder.com/300x300/4A90E2/white?text=Часы', 
+                rating: 4.8, 
+                store: 'Official Store' 
+            },
+            { 
+                id: 2, 
+                name: 'Беспроводные наушники', 
+                price: 890, 
+                image: 'https://via.placeholder.com/300x300/50C878/white?text=Наушники', 
+                rating: 4.6, 
+                store: 'TechGadgets' 
+            },
+            { 
+                id: 3, 
+                name: 'Портативная колонка', 
+                price: 670, 
+                image: 'https://via.placeholder.com/300x300/FF6B6B/white?text=Колонка', 
+                rating: 4.5, 
+                store: 'AudioPro' 
+            },
+            { 
+                id: 4, 
+                name: 'Смартфон Xiaomi', 
+                price: 15400, 
+                image: 'https://via.placeholder.com/300x300/FFA500/white?text=Телефон', 
+                rating: 4.7, 
+                store: 'Xiaomi Official' 
+            }
         ];
 
-        function initApp() {
-            console.log("Приложение инициализировано");
-            displayProducts(mockProducts);
-            
-            document.getElementById('searchInput').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') searchProducts();
-            });
+        // Инициализация WebApp
+        function initWebApp() {
+            try {
+                if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
+                    Telegram.WebApp.ready();
+                    Telegram.WebApp.expand();
+                    webAppAvailable = true;
+                    updateDebugInfo('WebApp: ✅ Подключен');
+                    console.log('WebApp инициализирован');
+                } else {
+                    updateDebugInfo('WebApp: ❌ Не доступен');
+                    console.log('WebApp не доступен');
+                }
+            } catch (error) {
+                updateDebugInfo('WebApp: ❌ Ошибка инициализации');
+                console.error('Ошибка инициализации WebApp:', error);
+            }
+        }
+
+        function updateDebugInfo(message) {
+            const debugElement = document.getElementById('debugInfo');
+            if (debugElement) {
+                debugElement.innerHTML = `Статус: ${message}`;
+            }
         }
 
         function searchProducts() {
@@ -154,6 +308,7 @@
                 return;
             }
 
+            updateDebugInfo(`Поиск: "${query}"`);
             document.getElementById('productsContainer').innerHTML = `
                 <div class="loading"><p>🔍 Ищем: "${query}"...</p></div>
             `;
@@ -164,6 +319,7 @@
                     p.store.toLowerCase().includes(query)
                 );
                 displayProducts(filtered.length ? filtered : mockProducts);
+                updateDebugInfo(`Найдено: ${filtered.length} товаров`);
             }, 500);
         }
 
@@ -176,7 +332,8 @@
 
             container.innerHTML = prods.map(product => `
                 <div class="product-card">
-                    <img src="${product.image}" alt="${product.name}" class="product-image">
+                    <img src="${product.image}" alt="${product.name}" class="product-image"
+                         onerror="this.src='https://via.placeholder.com/300x300/CCCCCC/white?text=Нет+фото'">
                     <div class="product-name">${product.name}</div>
                     <div class="product-price">${product.price}₽</div>
                     <div class="product-rating">⭐ ${product.rating}</div>
@@ -193,6 +350,7 @@
             if (product) {
                 cart.push(product);
                 updateCart();
+                updateDebugInfo(`Добавлен: ${product.name}`);
                 alert(`✅ ${product.name} добавлен в корзину!`);
             }
         }
@@ -227,29 +385,62 @@
             const total = cart.reduce((sum, item) => sum + item.price, 0);
             const orderData = {
                 action: 'checkout',
-                items: cart.map(item => ({ name: item.name, price: item.price, id: item.id })),
+                items: cart.map(item => ({ 
+                    name: item.name, 
+                    price: item.price, 
+                    id: item.id 
+                })),
                 total: total,
                 timestamp: new Date().toISOString()
             };
 
-            if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
+            console.log('Данные для отправки:', orderData);
+            updateDebugInfo('Отправка заказа...');
+
+            if (webAppAvailable) {
                 try {
                     Telegram.WebApp.sendData(JSON.stringify(orderData));
-                    alert(`🎉 Заказ оформлен!\nСумма: ${total}₽\n\nАдминистратор свяжется с вами.`);
+                    console.log('Данные отправлены через WebApp');
+                    updateDebugInfo('✅ Заказ отправлен');
+                    
+                    alert(`🎉 Заказ оформлен!\nСумма: ${total}₽\nТоваров: ${cart.length}\n\nАдминистратор свяжется с вами.`);
                     cart = [];
                     updateCart();
+                    
                 } catch (error) {
-                    alert('❌ Ошибка отправки заказа');
+                    console.error('Ошибка отправки через WebApp:', error);
+                    updateDebugInfo('❌ Ошибка отправки');
+                    alert('❌ Ошибка при оформлении заказа');
                 }
             } else {
-                alert(`🎉 Заказ оформлен!\nСумма: ${total}₽\n\n(Режим демонстрации)`);
+                console.log('WebApp не доступен, демо-режим');
+                updateDebugInfo('✅ Заказ (демо)');
+                
+                alert(`🎉 Заказ оформлен! (Демо-режим)\nСумма: ${total}₽\nТоваров: ${cart.length}`);
                 cart = [];
                 updateCart();
             }
         }
 
-        // Запуск приложения
-        document.addEventListener('DOMContentLoaded', initApp);
+        // Инициализация при загрузке
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Документ загружен');
+            initWebApp();
+            products = mockProducts;
+            displayProducts(products);
+            
+            // Обработчик Enter для поиска
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        searchProducts();
+                    }
+                });
+            }
+
+            updateDebugInfo('✅ Приложение готово');
+        });
     </script>
 </body>
 </html>
