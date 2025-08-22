@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Taobao Assistant</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * {
             margin: 0;
@@ -244,11 +245,12 @@
             <button class="checkout-btn" onclick="checkout()">✅ Оформить заказ</button>
         </div>
     </div>
-<script>
+
+    <script>
         let cart = [];
         let products = [];
 
-        // Mock данные товаров (в реальном приложении - API запрос)
+        // Mock данные товаров
         const mockProducts = [
             {
                 id: 1,
@@ -288,6 +290,12 @@
             }
         ];
 
+        // Инициализация WebApp
+        if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
+            Telegram.WebApp.ready();
+            Telegram.WebApp.expand();
+        }
+
         function searchProducts() {
             const query = document.getElementById('searchInput').value.trim();
             if (!query) {
@@ -302,9 +310,8 @@
                 </div>
             `;
 
-            // Имитация AI поиска (в реальном приложении - API запрос)
+            // Имитация AI поиска
             setTimeout(() => {
-                // Фильтрация товаров по запросу
                 const filteredProducts = mockProducts.filter(product =>
                     product.name.toLowerCase().includes(query.toLowerCase()) ||
                     product.store.toLowerCase().includes(query.toLowerCase())
@@ -312,7 +319,7 @@
 
                 products = filteredProducts.length > 0 ? filteredProducts : mockProducts;
                 displayProducts(products);
-            }, 1500);
+            }, 1000);
         }
 
         function displayProducts(products) {
@@ -342,7 +349,7 @@
             if (product) {
                 cart.push(product);
                 updateCart();
-                alert(✅ ${product.name} добавлен в корзину!);
+                alert(`✅ ${product.name} добавлен в корзину!`);
             }
         }
 
@@ -351,7 +358,7 @@
             const cartTotal = document.getElementById('cartTotal');
 
             if (cart.length === 0) {
-cartItems.innerHTML = '<p style="text-align: center; color: #666;">Корзина пуста</p>';
+                cartItems.innerHTML = '<p style="text-align: center; color: #666;">Корзина пуста</p>';
                 cartTotal.textContent = 'Итого: 0₽';
                 return;
             }
@@ -365,7 +372,7 @@ cartItems.innerHTML = '<p style="text-align: center; color: #666;">Корзин�
                 </div>
             `).join('');
 
-            cartTotal.textContent = Итого: ${total}₽;
+            cartTotal.textContent = `Итого: ${total}₽`;
         }
 
         function checkout() {
@@ -375,26 +382,22 @@ cartItems.innerHTML = '<p style="text-align: center; color: #666;">Корзин�
             }
 
             const total = cart.reduce((sum, item) => sum + item.price, 0);
-            const message = 🎉 Заказ оформлен!\nТоваров: ${cart.length}\nСумма: ${total}₽;
-
-            // Отправка данных в Telegram бот
-            if (Telegram.WebApp) {
+            
+            // Отправка данных в Telegram бота
+            if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
                 Telegram.WebApp.sendData(JSON.stringify({
                     action: 'checkout',
                     items: cart,
                     total: total,
                     timestamp: new Date().toISOString()
                 }));
+                
+                alert(`🎉 Заказ оформлен!\nТоваров: ${cart.length}\nСумма: ${total}₽`);
+                cart = [];
+                updateCart();
+            } else {
+                alert('Ошибка: WebApp не доступен');
             }
-
-            alert(message);
-            cart = [];
-            updateCart();
-        }
-
-        // Инициализация WebApp
-        if (Telegram.WebApp) {Telegram.WebApp.ready();
-            Telegram.WebApp.expand();
         }
 
         // Enter для поиска
@@ -402,6 +405,12 @@ cartItems.innerHTML = '<p style="text-align: center; color: #666;">Корзин�
             if (e.key === 'Enter') {
                 searchProducts();
             }
+        });
+
+        // Автоматическая загрузка товаров при открытии
+        window.addEventListener('load', function() {
+            products = mockProducts;
+            displayProducts(products);
         });
     </script>
 </body>
