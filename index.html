@@ -42,6 +42,57 @@
             font-size: 1.5em; 
         }
         
+        .registration-section {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .form-input:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+        
+        .save-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+        }
+        
+        .user-info {
+            background: #e8f5e8;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #28a745;
+        }
+        
         .search-box { 
             display: flex; 
             margin-bottom: 20px; 
@@ -192,13 +243,8 @@
             color: #666; 
         }
         
-        .debug-info {
-            background: #f8f9fa;
-            padding: 10px;
-            border-radius: 8px;
-            margin-top: 15px;
-            font-size: 12px;
-            color: #666;
+        .hidden {
+            display: none;
         }
     </style>
 </head>
@@ -209,34 +255,65 @@
             <p>Умный поиск товаров на Taobao</p>
         </div>
 
-        <div class="search-box">
-            <input type="text" class="search-input" placeholder="🔍 Что ищете?" id="searchInput">
-            <button class="search-btn" onclick="searchProducts()">Найти</button>
-        </div>
-
-        <div id="productsContainer" class="products-grid">
-            <div class="loading">
-                <p>🤖 Введите запрос для поиска...</p>
+        <!-- Секция регистрации -->
+        <div class="registration-section" id="registrationSection">
+            <h2>📝 Регистрация</h2>
+            <div class="form-group">
+                <label class="form-label">Имя *</label>
+                <input type="text" class="form-input" id="userName" placeholder="Ваше имя" required>
             </div>
-        </div>
-
-        <div class="cart-section">
-            <h2 class="cart-header">🛒 Корзина</h2>
-            <div id="cartItems" class="cart-items">
-                <p class="empty-cart">Корзина пуста</p>
+            <div class="form-group">
+                <label class="form-label">Телефон *</label>
+                <input type="tel" class="form-input" id="userPhone" placeholder="+7 (999) 999-99-99" required>
             </div>
-            <div id="cartTotal" class="cart-total">Итого: 0₽</div>
-            <button class="checkout-btn" onclick="checkout()">✅ Оформить заказ</button>
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-input" id="userEmail" placeholder="email@example.com">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Адрес доставки</label>
+                <input type="text" class="form-input" id="userAddress" placeholder="Город, улица, дом, квартира">
+            </div>
+            <button class="save-btn" onclick="saveUserInfo()">💾 Сохранить данные</button>
         </div>
 
-        <div class="debug-info" id="debugInfo">
-            Статус: Загрузка...
+        <!-- Информация о пользователе -->
+        <div class="user-info hidden" id="userInfoSection">
+            <h3>👤 Ваши данные</h3>
+            <div id="userInfoDisplay"></div>
+            <button class="save-btn" onclick="editUserInfo()" style="background: #667eea; margin-top: 10px;">
+                ✏️ Изменить данные
+            </button>
+        </div>
+
+        <!-- Поиск и товары (скрыто до регистрации) -->
+        <div id="mainContent" class="hidden">
+            <div class="search-box">
+                <input type="text" class="search-input" placeholder="🔍 Что ищете?" id="searchInput">
+                <button class="search-btn" onclick="searchProducts()">Найти</button>
+            </div>
+
+            <div id="productsContainer" class="products-grid">
+                <div class="loading">
+                    <p>🤖 Введите запрос для поиска...</p>
+                </div>
+            </div>
+
+            <div class="cart-section">
+                <h2 class="cart-header">🛒 Корзина</h2>
+                <div id="cartItems" class="cart-items">
+                    <p class="empty-cart">Корзина пуста</p>
+                </div>
+                <div id="cartTotal" class="cart-total">Итого: 0₽</div>
+                <button class="checkout-btn" onclick="checkout()">✅ Оформить заказ</button>
+            </div>
         </div>
     </div>
 
     <script>
         let cart = [];
         let products = [];
+        let userData = {};
         let webAppAvailable = false;
 
         // Mock данные товаров
@@ -256,51 +333,114 @@
                 image: 'https://via.placeholder.com/300x300/50C878/white?text=Наушники', 
                 rating: 4.6, 
                 store: 'TechGadgets' 
-            },
-            { 
-                id: 3, 
-                name: 'Портативная колонка', 
-                price: 670, 
-                image: 'https://via.placeholder.com/300x300/FF6B6B/white?text=Колонка', 
-                rating: 4.5, 
-                store: 'AudioPro' 
-            },
-            { 
-                id: 4, 
-                name: 'Смартфон Xiaomi', 
-                price: 15400, 
-                image: 'https://via.placeholder.com/300x300/FFA500/white?text=Телефон', 
-                rating: 4.7, 
-                store: 'Xiaomi Official' 
             }
         ];
 
-        // Инициализация WebApp
-        function initWebApp() {
+        // Инициализация
+        function initApp() {
             try {
                 if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
                     Telegram.WebApp.ready();
                     Telegram.WebApp.expand();
                     webAppAvailable = true;
-                    updateDebugInfo('WebApp: ✅ Подключен');
-                    console.log('WebApp инициализирован');
-                } else {
-                    updateDebugInfo('WebApp: ❌ Не доступен');
-                    console.log('WebApp не доступен');
+                    console.log('WebApp подключен');
                 }
             } catch (error) {
-                updateDebugInfo('WebApp: ❌ Ошибка инициализации');
-                console.error('Ошибка инициализации WebApp:', error);
+                console.error('Ошибка WebApp:', error);
+            }
+
+            loadUserData();
+            products = mockProducts;
+        }
+
+        // Загрузка данных пользователя
+        function loadUserData() {
+            const savedData = localStorage.getItem('userData');
+            if (savedData) {
+                userData = JSON.parse(savedData);
+                showUserInfo();
+                showMainContent();
+            } else {
+                showRegistrationForm();
             }
         }
 
-        function updateDebugInfo(message) {
-            const debugElement = document.getElementById('debugInfo');
-            if (debugElement) {
-                debugElement.innerHTML = `Статус: ${message}`;
+        // Сохранение данных пользователя
+        function saveUserInfo() {
+            const name = document.getElementById('userName').value.trim();
+            const phone = document.getElementById('userPhone').value.trim();
+            const email = document.getElementById('userEmail').value.trim();
+            const address = document.getElementById('userAddress').value.trim();
+
+            if (!name || !phone) {
+                alert('Пожалуйста, заполните обязательные поля (Имя и Телефон)');
+                return;
             }
+
+            userData = {
+                name: name,
+                phone: phone,
+                email: email,
+                address: address,
+                registrationDate: new Date().toISOString()
+            };
+
+            localStorage.setItem('userData', JSON.stringify(userData));
+            showUserInfo();
+            showMainContent();
+            alert('✅ Данные сохранены!');
         }
 
+        // Показать информацию о пользователе
+        function showUserInfo() {
+            const userInfoSection = document.getElementById('userInfoSection');
+            const userInfoDisplay = document.getElementById('userInfoDisplay');
+            
+            let infoHTML = `
+                <p><strong>Имя:</strong> ${userData.name}</p>
+                <p><strong>Телефон:</strong> ${userData.phone}</p>
+            `;
+            
+            if (userData.email) {
+                infoHTML += `<p><strong>Email:</strong> ${userData.email}</p>`;
+            }
+            
+            if (userData.address) {
+                infoHTML += `<p><strong>Адрес:</strong> ${userData.address}</p>`;
+            }
+            
+            userInfoDisplay.innerHTML = infoHTML;
+            userInfoSection.classList.remove('hidden');
+        }
+
+        // Редактирование данных
+        function editUserInfo() {
+            document.getElementById('userName').value = userData.name || '';
+            document.getElementById('userPhone').value = userData.phone || '';
+            document.getElementById('userEmail').value = userData.email || '';
+            document.getElementById('userAddress').value = userData.address || '';
+            
+            document.getElementById('userInfoSection').classList.add('hidden');
+            document.getElementById('registrationSection').classList.remove('hidden');
+            document.getElementById('mainContent').classList.add('hidden');
+        }
+
+        // Показать форму регистрации
+        function showRegistrationForm() {
+            document.getElementById('registrationSection').classList.remove('hidden');
+            document.getElementById('userInfoSection').classList.add('hidden');
+            document.getElementById('mainContent').classList.add('hidden');
+        }
+
+        // Показать основной контент
+        function showMainContent() {
+            document.getElementById('registrationSection').classList.add('hidden');
+            document.getElementById('userInfoSection').classList.remove('hidden');
+            document.getElementById('mainContent').classList.remove('hidden');
+            displayProducts(products);
+        }
+
+        // Поиск товаров
         function searchProducts() {
             const query = document.getElementById('searchInput').value.toLowerCase().trim();
             if (!query) {
@@ -308,19 +448,11 @@
                 return;
             }
 
-            updateDebugInfo(`Поиск: "${query}"`);
-            document.getElementById('productsContainer').innerHTML = `
-                <div class="loading"><p>🔍 Ищем: "${query}"...</p></div>
-            `;
-
-            setTimeout(() => {
-                const filtered = mockProducts.filter(p => 
-                    p.name.toLowerCase().includes(query) || 
-                    p.store.toLowerCase().includes(query)
-                );
-                displayProducts(filtered.length ? filtered : mockProducts);
-                updateDebugInfo(`Найдено: ${filtered.length} товаров`);
-            }, 500);
+            const filtered = mockProducts.filter(p => 
+                p.name.toLowerCase().includes(query) || 
+                p.store.toLowerCase().includes(query)
+            );
+            displayProducts(filtered.length ? filtered : mockProducts);
         }
 
         function displayProducts(prods) {
@@ -350,7 +482,6 @@
             if (product) {
                 cart.push(product);
                 updateCart();
-                updateDebugInfo(`Добавлен: ${product.name}`);
                 alert(`✅ ${product.name} добавлен в корзину!`);
             }
         }
@@ -382,9 +513,16 @@
                 return;
             }
 
+            if (!userData.name || !userData.phone) {
+                alert('Пожалуйста, сначала заполните ваши данные в разделе регистрации');
+                editUserInfo();
+                return;
+            }
+
             const total = cart.reduce((sum, item) => sum + item.price, 0);
             const orderData = {
                 action: 'checkout',
+                user: userData,
                 items: cart.map(item => ({ 
                     name: item.name, 
                     price: item.price, 
@@ -394,53 +532,27 @@
                 timestamp: new Date().toISOString()
             };
 
-            console.log('Данные для отправки:', orderData);
-            updateDebugInfo('Отправка заказа...');
+            console.log('Данные заказа:', orderData);
 
             if (webAppAvailable) {
                 try {
                     Telegram.WebApp.sendData(JSON.stringify(orderData));
-                    console.log('Данные отправлены через WebApp');
-                    updateDebugInfo('✅ Заказ отправлен');
-                    
                     alert(`🎉 Заказ оформлен!\nСумма: ${total}₽\nТоваров: ${cart.length}\n\nАдминистратор свяжется с вами.`);
                     cart = [];
                     updateCart();
-                    
                 } catch (error) {
-                    console.error('Ошибка отправки через WebApp:', error);
-                    updateDebugInfo('❌ Ошибка отправки');
+                    console.error('Ошибка отправки:', error);
                     alert('❌ Ошибка при оформлении заказа');
                 }
             } else {
-                console.log('WebApp не доступен, демо-режим');
-                updateDebugInfo('✅ Заказ (демо)');
-                
                 alert(`🎉 Заказ оформлен! (Демо-режим)\nСумма: ${total}₽\nТоваров: ${cart.length}`);
                 cart = [];
                 updateCart();
             }
         }
 
-        // Инициализация при загрузке
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Документ загружен');
-            initWebApp();
-            products = mockProducts;
-            displayProducts(products);
-            
-            // Обработчик Enter для поиска
-            const searchInput = document.getElementById('searchInput');
-            if (searchInput) {
-                searchInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        searchProducts();
-                    }
-                });
-            }
-
-            updateDebugInfo('✅ Приложение готово');
-        });
+        // Запуск приложения
+        document.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
 </html>
