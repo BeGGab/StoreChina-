@@ -4,570 +4,712 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Taobao Assistant</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        * { 
-            margin: 0; 
-            padding: 0; 
-            box-sizing: border-box; 
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+
+        body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh; 
-            padding: 20px; 
-            color: #333;
-        }
-        
-        .container { 
-            max-width: 100%; 
-            background: white; 
-            border-radius: 15px; 
-            padding: 15px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        
-        .header { 
-            text-align: center; 
-            margin-bottom: 20px; 
-            padding: 15px; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 12px; 
-            color: white; 
-        }
-        
-        .header h1 { 
-            margin-bottom: 8px; 
-            font-size: 1.5em; 
-        }
-        
-        .registration-section {
-            background: #fff;
-            border-radius: 12px;
+            min-height: 100vh;
             padding: 20px;
-            margin-bottom: 20px;
-            border: 2px solid #e9ecef;
-        }
-        
-        .form-group {
-            margin-bottom: 15px;
-        }
-        
-        .form-label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
             color: #333;
         }
-        
-        .form-input {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e1e5e9;
-            border-radius: 8px;
-            font-size: 14px;
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
         }
-        
-        .form-input:focus {
-            border-color: #667eea;
-            outline: none;
+
+        header {
+            background: linear-gradient(90deg, #4b6cb7 0%, #182848 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
         }
-        
-        .save-btn {
-            background: #28a745;
+
+        header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .logo {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        nav {
+            background: #f8f9fa;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            padding: 12px 25px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
             color: white;
             border: none;
-            padding: 12px 20px;
             border-radius: 8px;
             cursor: pointer;
-            width: 100%;
             font-weight: bold;
+            transition: transform 0.3s, box-shadow 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        
-        .user-info {
-            background: #e8f5e8;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            border-left: 4px solid #28a745;
+
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         }
-        
-        .search-box { 
-            display: flex; 
-            margin-bottom: 20px; 
-            gap: 10px; 
+
+        .nav-btn.active {
+            background: linear-gradient(45deg, #182848, #4b6cb7);
         }
-        
-        .search-input { 
-            flex: 1; 
-            padding: 12px 15px; 
-            border: 2px solid #e1e5e9; 
-            border-radius: 20px; 
-            font-size: 14px; 
-        }
-        
-        .search-btn { 
-            padding: 12px 20px; 
-            background: #28a745; 
-            color: white; 
-            border: none; 
-            border-radius: 20px; 
-            cursor: pointer; 
-            font-weight: bold;
-        }
-        
-        .products-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
-            gap: 15px; 
-            margin-bottom: 20px; 
-        }
-        
-        .product-card { 
-            background: #f8f9fa; 
-            border-radius: 12px; 
-            padding: 12px; 
-            text-align: center; 
-            transition: transform 0.2s ease;
-        }
-        
-        .product-card:hover { 
-            transform: translateY(-2px); 
-        }
-        
-        .product-image { 
-            width: 100%; 
-            height: 150px; 
-            object-fit: cover; 
-            border-radius: 8px; 
-            margin-bottom: 10px; 
-        }
-        
-        .product-name { 
-            font-weight: bold; 
-            margin-bottom: 8px; 
-            font-size: 1.1em;
-        }
-        
-        .product-price { 
-            color: #e74c3c; 
-            font-weight: bold; 
-            margin-bottom: 8px; 
-            font-size: 1.2em;
-        }
-        
-        .product-rating { 
-            color: #f39c12; 
-            margin-bottom: 8px; 
-        }
-        
-        .product-store { 
-            color: #666; 
-            font-size: 0.9em; 
-            margin-bottom: 12px; 
-        }
-        
-        .add-to-cart { 
-            background: #667eea; 
-            color: white; 
-            border: none; 
-            padding: 10px 15px; 
-            borderRadius: 20px; 
-            cursor: pointer; 
-            width: 100%; 
-            font-weight: bold;
-            transition: background 0.2s ease;
-        }
-        
-        .add-to-cart:hover { 
-            background: #5a67d8; 
-        }
-        
-        .cart-section { 
-            background: #fff; 
-            border-radius: 12px; 
-            padding: 15px; 
-            margin-top: 20px; 
-            border: 2px solid #e9ecef; 
-        }
-        
-        .cart-header { 
-            text-align: center; 
-            margin-bottom: 15px; 
-            font-size: 1.2em;
-            font-weight: bold;
-        }
-        
-        .cart-items { 
-            max-height: 150px; 
-            overflow-y: auto; 
-            margin-bottom: 15px; 
-        }
-        
-        .cart-item { 
-            display: flex; 
-            justify-content: space-between; 
-            padding: 8px; 
-            border-bottom: 1px solid #eee; 
-        }
-        
-        .cart-total { 
-            font-weight: bold; 
-            text-align: center; 
-            margin-bottom: 15px; 
-            color: #e74c3c; 
-            font-size: 1.2em;
-        }
-        
-        .checkout-btn { 
-            background: #28a745; 
-            color: white; 
-            border: none; 
-            padding: 12px; 
-            border-radius: 20px; 
-            cursor: pointer; 
-            width: 100%; 
-            font-weight: bold;
-            font-size: 1.1em;
-            transition: background 0.2s ease;
-        }
-        
-        .checkout-btn:hover { 
-            background: #218838; 
-        }
-        
-        .loading, .empty-cart { 
-            text-align: center; 
-            padding: 20px; 
-            color: #666; 
-        }
-        
-        .hidden {
+
+        .section {
+            padding: 25px;
             display: none;
         }
-        
-        .visible {
+
+        .section.active {
             display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user-info-form {
+            max-width: 500px;
+            margin: 0 auto;
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 12px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .save-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .save-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s;
+            border: 1px solid #e9ecef;
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .product-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-bottom: 2px solid #f1f3f5;
+        }
+
+        .product-info {
+            padding: 20px;
+        }
+
+        .product-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #212529;
+        }
+
+        .product-store {
+            color: #6c757d;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+
+        .product-price {
+            font-size: 20px;
+            font-weight: bold;
+            color: #28a745;
+            margin-bottom: 15px;
+        }
+
+        .add-to-cart {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        .add-to-cart:hover {
+            background: linear-gradient(45deg, #5a67d8, #6b46c1);
+        }
+
+        .cart-items {
+            margin-top: 20px;
+        }
+
+        .cart-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #e9ecef;
+            gap: 15px;
+        }
+
+        .cart-item-image {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .cart-item-info {
+            flex-grow: 1;
+        }
+
+        .cart-item-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .cart-item-price {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .remove-from-cart {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .cart-total {
+            margin-top: 25px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .total-price {
+            font-size: 24px;
+            font-weight: bold;
+            color: #212529;
+            margin-bottom: 15px;
+        }
+
+        .checkout-btn {
+            padding: 15px 30px;
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .checkout-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .user-info-display {
+            background: #e7f5ff;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+        }
+
+        .info-row {
+            display: flex;
+            margin-bottom: 10px;
+        }
+
+        .info-label {
+            font-weight: bold;
+            min-width: 120px;
+            color: #495057;
+        }
+
+        .info-value {
+            color: #212529;
+        }
+
+        .edit-btn {
+            background: #fd7e14;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateX(100px);
+            transition: all 0.3s ease;
+        }
+
+        .notification.success {
+            background: #28a745;
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .notification.error {
+            background: #dc3545;
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        @media (max-width: 768px) {
+            nav {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .nav-btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .products-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>🛍 AI Taobao Assistant</h1>
-            <p>Умный поиск товаров на Taobao</p>
-        </div>
+        <header>
+            <div class="logo">🛒</div>
+            <h1>AI Taobao Assistant</h1>
+            <p>Покупайте товары с Taobao с удобной доставкой!</p>
+        </header>
 
-        <!-- Секция регистрации -->
-        <div class="registration-section" id="registrationSection">
-            <h2>📝 Регистрация</h2>
-            <div class="form-group">
-                <label class="form-label">Имя *</label>
-                <input type="text" class="form-input" id="userName" placeholder="Ваше имя" required>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Телефон *</label>
-                <input type="tel" class="form-input" id="userPhone" placeholder="+7 (999) 999-99-99" required>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Email</label>
-                <input type="email" class="form-input" id="userEmail" placeholder="email@example.com">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Адрес доставки</label>
-                <input type="text" class="form-input" id="userAddress" placeholder="Город, улица, дом, квартира">
-            </div>
-            <button class="save-btn" onclick="saveUserInfo()">💾 Сохранить данные</button>
-        </div>
-
-        <!-- Информация о пользователе -->
-        <div class="user-info hidden" id="userInfoSection">
-            <h3>👤 Ваши данные</h3>
-            <div id="userInfoDisplay"></div>
-            <button class="save-btn" onclick="editUserInfo()" style="background: #667eea; margin-top: 10px;">
-                ✏️ Изменить данные
+        <nav>
+            <button class="nav-btn active" onclick="showSection('products')">
+                <span>🛍️</span> Товары
             </button>
+            <button class="nav-btn" onclick="showSection('cart')">
+                <span>🛒</span> Корзина <span id="cart-count">0</span>
+            </button>
+            <button class="nav-btn" onclick="showSection('user')">
+                <span>👤</span> Мои данные
+            </button>
+        </nav>
+
+        <div class="section active" id="products-section">
+            <h2>🎯 Популярные товары</h2>
+            <div class="products-grid" id="products-grid">
+                <!-- Товары будут загружены через JavaScript -->
+            </div>
         </div>
 
-        <!-- Поиск и товары -->
-        <div id="mainContent" class="hidden">
-            <div class="search-box">
-                <input type="text" class="search-input" placeholder="🔍 Что ищете?" id="searchInput">
-                <button class="search-btn" onclick="searchProducts()">Найти</button>
-            </div>
-
-            <div id="productsContainer" class="products-grid">
-                <div class="loading">
-                    <p>🎯 Выберите товары из каталога</p>
+        <div class="section" id="cart-section">
+            <h2>🛒 Ваша корзина</h2>
+            <div class="cart-items" id="cart-items">
+                <!-- Товары в корзине -->
+                <div class="empty-cart" id="empty-cart">
+                    <p style="text-align: center; padding: 40px; color: #6c757d;">
+                        Ваша корзина пуста. Добавьте товары из раздела "Товары".
+                    </p>
                 </div>
             </div>
-
-            <div class="cart-section">
-                <h2 class="cart-header">🛒 Корзина</h2>
-                <div id="cartItems" class="cart-items">
-                    <p class="empty-cart">Корзина пуста</p>
+            <div class="cart-total">
+                <div class="total-price" id="total-price">
+                    Итого: 0₽
                 </div>
-                <div id="cartTotal" class="cart-total">Итого: 0₽</div>
-                <button class="checkout-btn" onclick="checkout()">✅ Оформить заказ</button>
+                <button class="checkout-btn" onclick="checkout()">
+                    🚀 Оформить заказ
+                </button>
+            </div>
+        </div>
+
+        <div class="section" id="user-section">
+            <h2>👤 Мои данные</h2>
+            
+            <div class="user-info-display" id="user-info-display" style="display: none;">
+                <div class="info-row">
+                    <span class="info-label">Имя:</span>
+                    <span class="info-value" id="display-name"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Телефон:</span>
+                    <span class="info-value" id="display-phone"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value" id="display-email"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Адрес:</span>
+                    <span class="info-value" id="display-address"></span>
+                </div>
+                <button class="edit-btn" onclick="editUserInfo()">
+                    ✏️ Редактировать
+                </button>
+            </div>
+
+            <div class="user-info-form" id="user-info-form">
+                <div class="form-group">
+                    <label for="name">ФИО *</label>
+                    <input type="text" id="name" placeholder="Иванов Иван Иванович" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone">Телефон *</label>
+                    <input type="tel" id="phone" placeholder="+7 (999) 123-45-67" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" placeholder="ivanov@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="address">Адрес доставки</label>
+                    <input type="text" id="address" placeholder="г. Москва, ул. Примерная, д. 1">
+                </div>
+                <button class="save-btn" onclick="saveUserInfo()">
+                    💾 Сохранить данные
+                </button>
             </div>
         </div>
     </div>
 
-    <script>
-        let cart = [];
-        let products = [];
-        let userData = {};
-        let webAppAvailable = false;
+    <div class="notification" id="notification"></div>
 
-        // Mock данные товаров
-        const mockProducts = [
-            { 
-                id: 1, 
-                name: 'Умные часы SmartWatch Pro', 
-                price: 1250, 
-                image: 'https://via.placeholder.com/300x300/4A90E2/white?text=Часы', 
-                rating: 4.8, 
-                store: 'Official Store',
-                description: 'Умные часы с функцией отслеживания здоровья'
+    <script>
+        // Данные пользователя
+        let userData = {
+            name: '',
+            phone: '',
+            email: '',
+            address: ''
+        };
+
+        // Корзина товаров
+        let cart = [];
+
+        // Пример товаров
+        const products = [
+            {
+                id: 1,
+                name: "Смартфон Xiaomi Redmi Note 12",
+                price: 15999,
+                image: "https://via.placeholder.com/300x200/667eea/white?text=Xiaomi",
+                store: "Xiaomi Official Store"
             },
-            { 
-                id: 2, 
-                name: 'Беспроводные наушники', 
-                price: 890, 
-                image: 'https://via.placeholder.com/300x300/50C878/white?text=Наушники', 
-                rating: 4.6, 
-                store: 'TechGadgets',
-                description: 'Беспроводные наушники с шумоподавлением'
+            {
+                id: 2,
+                name: "Наушники Bluetooth TWS",
+                price: 2999,
+                image: "https://via.placeholder.com/300x200/764ba2/white?text=Наушники",
+                store: "Audio Gadgets Store"
             },
-            { 
-                id: 3, 
-                name: 'Портативная колонка', 
-                price: 670, 
-                image: 'https://via.placeholder.com/300x300/FF6B6B/white?text=Колонка', 
-                rating: 4.5, 
-                store: 'AudioPro',
-                description: 'Мощная портативная колонка с Bluetooth'
+            {
+                id: 3,
+                name: "Умные часы Huawei Watch",
+                price: 8999,
+                image: "https://via.placeholder.com/300x200/28a745/white?text=Часы",
+                store: "Huawei Official"
             },
-            { 
-                id: 4, 
-                name: 'Смартфон Xiaomi', 
-                price: 15400, 
-                image: 'https://via.placeholder.com/300x300/FFA500/white?text=Телефон', 
-                rating: 4.7, 
-                store: 'Xiaomi Official',
-                description: 'Флагманский смартфон с лучшей камерой'
+            {
+                id: 4,
+                name: "Портативная колонка JBL",
+                price: 4999,
+                image: "https://via.placeholder.com/300x200/dc3545/white?text=Колонка",
+                store: "Audio Equipment Store"
             },
-            { 
-                id: 5, 
-                name: 'Фитнес-браслет', 
-                price: 560, 
-                image: 'https://via.placeholder.com/300x300/20B2AA/white?text=Фитнес', 
-                rating: 4.4, 
-                store: 'HealthCare',
-                description: 'Трекер активности и сна'
+            {
+                id: 5,
+                name: "Фитнес-трекер Mi Band 8",
+                price: 3499,
+                image: "https://via.placeholder.com/300x200/fd7e14/white?text=Mi+Band",
+                store: "Xiaomi Official Store"
             },
-            { 
-                id: 6, 
-                name: 'Игровая мышь', 
-                price: 1200, 
-                image: 'https://via.placeholder.com/300x300/9370DB/white?text=Мышь', 
-                rating: 4.9, 
-                store: 'GamingTech',
-                description: 'Высокоточная игровая мышь'
+            {
+                id: 6,
+                name: "Powerbank 20000 mAh",
+                price: 1999,
+                image: "https://via.placeholder.com/300x200/6f42c1/white?text=Powerbank",
+                store: "Gadgets World"
             }
         ];
 
-        // Инициализация
-        function initApp() {
-            console.log('Документ загружен');
-            
-            try {
-                if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
-                    Telegram.WebApp.ready();
-                    Telegram.WebApp.expand();
-                    webAppAvailable = true;
-                    console.log('WebApp подключен');
-                }
-            } catch (error) {
-                console.error('Ошибка WebApp:', error);
-            }
-
+        // Инициализация при загрузке
+        document.addEventListener('DOMContentLoaded', function() {
             loadUserData();
-            products = mockProducts;
+            loadCart();
+            renderProducts();
+            updateCartDisplay();
+            checkUserInfo();
+        });
+
+        // Показать раздел
+        function showSection(sectionId) {
+            // Скрыть все разделы
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
             
-            // Показываем товары сразу если пользователь зарегистрирован
-            if (userData.name) {
-                displayProducts(products);
-            }
+            // Убрать активный класс у всех кнопок
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Показать выбранный раздел
+            document.getElementById(sectionId + '-section').classList.add('active');
+            
+            // Активировать соответствующую кнопку
+            document.querySelector(`.nav-btn[onclick="showSection('${sectionId}')"]`).classList.add('active');
         }
 
-        // Загрузка данных пользователя
+        // Загрузить данные пользователя
         function loadUserData() {
-            const savedData = localStorage.getItem('userData');
-            if (savedData) {
-                userData = JSON.parse(savedData);
-                showUserInfo();
-                showMainContent();
-            } else {
-                showRegistrationForm();
+            const saved = localStorage.getItem('userData');
+            if (saved) {
+                userData = JSON.parse(saved);
             }
         }
 
-        // Сохранение данных пользователя
+        // Сохранить данные пользователя
         function saveUserInfo() {
-            const name = document.getElementById('userName').value.trim();
-            const phone = document.getElementById('userPhone').value.trim();
-            const email = document.getElementById('userEmail').value.trim();
-            const address = document.getElementById('userAddress').value.trim();
-
-            if (!name || !phone) {
-                alert('Пожалуйста, заполните обязательные поля (Имя и Телефон)');
-                return;
-            }
-
             userData = {
-                name: name,
-                phone: phone,
-                email: email,
-                address: address,
-                registrationDate: new Date().toISOString()
+                name: document.getElementById('name').value.trim(),
+                phone: document.getElementById('phone').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                address: document.getElementById('address').value.trim()
             };
 
+            if (!userData.name || !userData.phone) {
+                showNotification('Пожалуйста, заполните обязательные поля (ФИО и Телефон)', 'error');
+                return;
+            }
+
             localStorage.setItem('userData', JSON.stringify(userData));
-            showUserInfo();
-            showMainContent();
-            alert('✅ Данные сохранены! Теперь вы можете делать заказы.');
+            showNotification('Данные успешно сохранены!', 'success');
+            checkUserInfo();
         }
 
-        // Показать информацию о пользователе
-        function showUserInfo() {
-            const userInfoSection = document.getElementById('userInfoSection');
-            const userInfoDisplay = document.getElementById('userInfoDisplay');
-            
-            let infoHTML = `
-                <p><strong>Имя:</strong> ${userData.name}</p>
-                <p><strong>Телефон:</strong> ${userData.phone}</p>
-            `;
-            
-            if (userData.email) {
-                infoHTML += `<p><strong>Email:</strong> ${userData.email}</p>`;
-            }
-            
-            if (userData.address) {
-                infoHTML += `<p><strong>Адрес:</strong> ${userData.address}</p>`;
-            }
-            
-            userInfoDisplay.innerHTML = infoHTML;
-            userInfoSection.classList.remove('hidden');
-            userInfoSection.classList.add('visible');
-        }
-
-        // Редактирование данных
+        // Редактировать данные пользователя
         function editUserInfo() {
-            document.getElementById('userName').value = userData.name || '';
-            document.getElementById('userPhone').value = userData.phone || '';
-            document.getElementById('userEmail').value = userData.email || '';
-            document.getElementById('userAddress').value = userData.address || '';
+            document.getElementById('name').value = userData.name;
+            document.getElementById('phone').value = userData.phone;
+            document.getElementById('email').value = userData.email;
+            document.getElementById('address').value = userData.address;
             
-            document.getElementById('userInfoSection').classList.add('hidden');
-            document.getElementById('registrationSection').classList.remove('hidden');
-            document.getElementById('mainContent').classList.add('hidden');
+            document.getElementById('user-info-display').style.display = 'none';
+            document.getElementById('user-info-form').style.display = 'block';
         }
 
-        // Показать форму регистрации
-        function showRegistrationForm() {
-            document.getElementById('registrationSection').classList.remove('hidden');
-            document.getElementById('userInfoSection').classList.add('hidden');
-            document.getElementById('mainContent').classList.add('hidden');
-        }
-
-        // Показать основной контент
-        function showMainContent() {
-            document.getElementById('registrationSection').classList.add('hidden');
-            document.getElementById('userInfoSection').classList.remove('hidden');
-            document.getElementById('mainContent').classList.remove('hidden');
-            displayProducts(products);
-        }
-
-        // Поиск товаров
-        function searchProducts() {
-            const query = document.getElementById('searchInput').value.toLowerCase().trim();
-            if (!query) {
-                displayProducts(mockProducts);
-                return;
+        // Проверить и отобразить данные пользователя
+        function checkUserInfo() {
+            const displayDiv = document.getElementById('user-info-display');
+            const formDiv = document.getElementById('user-info-form');
+            
+            if (userData.name && userData.phone) {
+                document.getElementById('display-name').textContent = userData.name;
+                document.getElementById('display-phone').textContent = userData.phone;
+                document.getElementById('display-email').textContent = userData.email || 'Не указан';
+                document.getElementById('display-address').textContent = userData.address || 'Не указан';
+                
+                displayDiv.style.display = 'block';
+                formDiv.style.display = 'none';
+            } else {
+                displayDiv.style.display = 'none';
+                formDiv.style.display = 'block';
             }
-
-            const filtered = mockProducts.filter(p => 
-                p.name.toLowerCase().includes(query) || 
-                p.store.toLowerCase().includes(query) ||
-                p.description.toLowerCase().includes(query)
-            );
-            displayProducts(filtered.length ? filtered : mockProducts);
         }
 
-        function displayProducts(prods) {
-            const container = document.getElementById('productsContainer');
-            if (!prods.length) {
-                container.innerHTML = '<div class="loading"><p>😔 Товары не найдены</p></div>';
-                return;
-            }
-
-            container.innerHTML = prods.map(product => `
-                <div class="product-card">
-                    <img src="${product.image}" alt="${product.name}" class="product-image"
-                         onerror="this.src='https://via.placeholder.com/300x300/CCCCCC/white?text=Нет+фото'">
-                    <div class="product-name">${product.name}</div>
-                    <div class="product-price">${product.price}₽</div>
-                    <div class="product-rating">⭐ ${product.rating}</div>
-                    <div class="product-store">🏪 ${product.store}</div>
-                    <div style="font-size: 12px; color: #666; margin-bottom: 10px;">${product.description}</div>
-                    <button class="add-to-cart" onclick="addToCart(${product.id})">
-                        🛒 В корзину
-                    </button>
-                </div>
-            `).join('');
+        // Отобразить товары
+        function renderProducts() {
+            const grid = document.getElementById('products-grid');
+            grid.innerHTML = '';
+            
+            products.forEach(product => {
+                const productCard = document.createElement('div');
+                productCard.className = 'product-card';
+                productCard.innerHTML = `
+                    <img src="${product.image}" alt="${product.name}" class="product-image">
+                    <div class="product-info">
+                        <div class="product-title">${product.name}</div>
+                        <div class="product-store">${product.store}</div>
+                        <div class="product-price">${product.price.toLocaleString()}₽</div>
+                        <button class="add-to-cart" onclick="addToCart(${product.id})">
+                            🛒 Добавить в корзину
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(productCard);
+            });
         }
 
+        // Добавить в корзину
         function addToCart(productId) {
-            const product = mockProducts.find(p => p.id === productId);
+            const product = products.find(p => p.id === productId);
             if (product) {
                 cart.push(product);
-                updateCart();
-                alert(`✅ ${product.name} добавлен в корзину!`);
+                saveCart();
+                updateCartDisplay();
+                showNotification(`"${product.name}" добавлен в корзину!`, 'success');
             }
         }
 
-        function updateCart() {
-            const cartItems = document.getElementById('cartItems');
-            const cartTotal = document.getElementById('cartTotal');
+        // Удалить из корзины
+        function removeFromCart(index) {
+            const removedItem = cart[index];
+            cart.splice(index, 1);
+            saveCart();
+            updateCartDisplay();
+            showNotification(`"${removedItem.name}" удален из корзины`, 'error');
+        }
+
+        // Сохранить корзину
+        function saveCart() {
+            localStorage.setItem('cart', JSON.stringify(cart));
+        }
+
+        // Загрузить корзину
+        function loadCart() {
+            const saved = localStorage.getItem('cart');
+            if (saved) {
+                cart = JSON.parse(saved);
+            }
+        }
+
+        // Обновить отображение корзины
+        function updateCartDisplay() {
+            const cartItems = document.getElementById('cart-items');
+            const emptyCart = document.getElementById('empty-cart');
+            const totalPrice = document.getElementById('total-price');
+            const cartCount = document.getElementById('cart-count');
+            
+            // Обновить счетчик
+            cartCount.textContent = cart.length;
             
             if (cart.length === 0) {
-                cartItems.innerHTML = '<p class="empty-cart">Корзина пуста</p>';
-                cartTotal.textContent = 'Итого: 0₽';
+                emptyCart.style.display = 'block';
+                cartItems.innerHTML = '';
+                cartItems.appendChild(emptyCart);
+                totalPrice.textContent = 'Итого: 0₽';
                 return;
             }
-
-            const total = cart.reduce((sum, item) => sum + item.price, 0);
-            cartItems.innerHTML = cart.map((item, index) => `
-                <div class="cart-item">
-                    <span>${index + 1}. ${item.name}</span>
-                    <span>${item.price}₽</span>
-                </div>
-            `).join('');
             
-            cartTotal.textContent = `Итого: ${total}₽`;
+            emptyCart.style.display = 'none';
+            
+            // Очистить и заполнить корзину
+            cartItems.innerHTML = '';
+            let total = 0;
+            
+            cart.forEach((item, index) => {
+                total += item.price;
+                
+                const cartItem = document.createElement('div');
+                cartItem.className = 'cart-item';
+                cartItem.innerHTML = `
+                    <img src="${item.image}" alt="${item.name}" class="cart-item-image">
+                    <div class="cart-item-info">
+                        <div class="cart-item-title">${item.name}</div>
+                        <div class="cart-item-price">${item.price.toLocaleString()}₽</div>
+                    </div>
+                    <button class="remove-from-cart" onclick="removeFromCart(${index})">
+                        ❌
+                    </button>
+                `;
+                cartItems.appendChild(cartItem);
+            });
+            
+            totalPrice.textContent = `Итого: ${total.toLocaleString()}₽`;
         }
 
+        // Оформить заказ
         function checkout() {
             if (cart.length === 0) {
-                alert('Корзина пуста!');
+                showNotification('Корзина пуста!', 'error');
                 return;
             }
 
             if (!userData.name || !userData.phone) {
-                alert('Пожалуйста, сначала заполните ваши данные в разделе регистрации');
+                showNotification('Пожалуйста, сначала заполните ваши данные в разделе регистрации', 'error');
                 editUserInfo();
+                showSection('user');
                 return;
             }
 
@@ -576,9 +718,11 @@
                 action: 'checkout',
                 user: userData,
                 items: cart.map(item => ({ 
+                    id: item.id,
                     name: item.name, 
-                    price: item.price, 
-                    id: item.id 
+                    price: item.price,
+                    image: item.image,
+                    store: item.store
                 })),
                 total: total,
                 timestamp: new Date().toISOString()
@@ -586,25 +730,54 @@
 
             console.log('Данные заказа:', orderData);
 
-            if (webAppAvailable) {
+            // ДЕБАГ: Сохраняем данные в localStorage для проверки
+            localStorage.setItem('last_order_debug', JSON.stringify(orderData));
+            console.log('Данные сохранены в localStorage для отладки');
+
+            if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
                 try {
+                    // Отправляем как строку JSON
                     Telegram.WebApp.sendData(JSON.stringify(orderData));
-                    alert(`🎉 Заказ оформлен!\nСумма: ${total}₽\nТоваров: ${cart.length}\n\nАдминистратор свяжется с вами.`);
+                    console.log('Данные отправлены через WebApp');
+                    
+                    showNotification(`🎉 Заказ оформлен! Сумма: ${total}₽`, 'success');
                     cart = [];
-                    updateCart();
+                    saveCart();
+                    updateCartDisplay();
                 } catch (error) {
                     console.error('Ошибка отправки:', error);
-                    alert('❌ Ошибка при оформлении заказа');
+                    showNotification('❌ Ошибка при оформлении заказа', 'error');
                 }
             } else {
-                alert(`🎉 Заказ оформлен! (Демо-режим)\nСумма: ${total}₽\nТоваров: ${cart.length}`);
+                // Режим отладки (если не в Telegram)
+                console.log('Демо-режим, данные:', orderData);
+                showNotification(`🎉 Заказ оформлен! (Демо-режим) Сумма: ${total}₽`, 'success');
                 cart = [];
-                updateCart();
+                saveCart();
+                updateCartDisplay();
             }
         }
 
-        // Запуск приложения
-        document.addEventListener('DOMContentLoaded', initApp);
+        // Показать уведомление
+        function showNotification(message, type) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = 'notification ' + type;
+            
+            setTimeout(() => {
+                notification.className = 'notification';
+            }, 3000);
+        }
+
+        // Для отладки: вывести последний заказ в консоль
+        function debugLastOrder() {
+            const lastOrder = localStorage.getItem('last_order_debug');
+            if (lastOrder) {
+                console.log('Последний заказ (debug):', JSON.parse(lastOrder));
+            } else {
+                console.log('Нет данных последнего заказа');
+            }
+        }
     </script>
 </body>
 </html>
