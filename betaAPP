@@ -1,9 +1,7 @@
+# bot.py
 import telebot
 from telebot import types
 import json
-import os
-import sqlite3
-from datetime import datetime, timedelta
 import logging
 
 # Настройка логирования
@@ -11,359 +9,39 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('bot.log', encoding='utf-8'),
+        'bot.log', encoding='utf-8'),
         logging.StreamHandler()
     ]
 )
 logger = logging.getLogger(__name__)
 
-# Токен (тестовый, как указано)
+# Токен (тестовый)
 TOKEN = '8127036562:AAHDyx_ygbhVOTXrQcAqRlifYStmb1vDLMA'
 ADMIN_ID = 1707332723
-DATABASE = 'store.db'
 
 bot = telebot.TeleBot(TOKEN)
 
+# Подключаем функции из database.py
+import database
 
-# =============================================
-# РАБОТА С БАЗОЙ ДАННЫХ
-# =============================================
-
-def init_db():
-    """Создаёт базу данных и все таблицы, если их нет"""
-    conn = sqlite3.connect(DATABASE)
-    cursor = conn.cursor()
-
-    # Включаем внешние ключи
-    cursor.execute("PRAGMA foreign_keys = ON;")
-
-    # Таблицы создаются по твоему SQL
-    schema_sql = """
-    PRAGMA foreign_keys = ON;
-
-    CREATE TABLE IF NOT EXISTS suppliers (
-        id_supplier         INTEGER PRIMARY KEY AUTOINCREMENT,
-        name                TEXT    NOT NULL,
-        platform            TEXT    NOT NULL,
-        contact_info        TEXT,
-        min_order_value     REAL,
-        shipping_method     TEXT,
-        avg_delivery_days   INTEGER,
-        active              INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1)),
-        created_at          TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
-    );
-
-    CREATE TABLE IF NOT EXISTS products (
-        id_product          INTEGER PRIMARY KEY AUTOINCREMENT,
-        name                TEXT    NOT NULL,
-        description         TEXT,
-        price_rub           REAL    NOT NULL CHECK (price_rub > 0),
-        original_price_yuan REAL    NOT NULL,
-        category            TEXT    DEFAULT 'обувь',
-        taobao_url          TEXT    NOT NULL,
-        taobao_item_id      TEXT    NOT NULL UNIQUE,
-        image_urls          TEXT,
-        attributes          TEXT,
-        last_updated        TEXT    NOT NULL DEFAULT (datetime('now', 'localtime')),
-        created_at          TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
-    );
-
-    CREATE TABLE IF NOT EXISTS customers (
-        id_customer         INTEGER PRIMARY KEY AUTOINCREMENT,
-        telegram_id         INTEGER NOT NULL UNIQUE,
-        full_name           TEXT,
-        username            TEXT,
-        phone               TEXT,
-        delivery_address    TEXT,
-        city                TEXT,
-        country             TEXT    NOT NULL DEFAULT 'Russia',
-        language            TEXT    NOT NULL DEFAULT 'ru',
-        created_at          TEXT    NOT NULL DEFAULT (datetime('now', 'localtime')),
-        updated_at          TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
-    );
-
-    CREATE TABLE IF NOT EXISTS user_sessions (
-        id_session          INTEGER PRIMARY KEY AUTOINCREMENT,
-        telegram_id         INTEGER NOT NULL,
-        query               TEXT    NOT NULL,
-        results_json        TEXT,
-        status              TEXT    NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'completed', 'expired')),
-        created_at          TEXT    NOT NULL DEFAULT (datetime('now', 'localtime')),
-        expires_at          TEXT    NOT NULL DEFAULT (datetime('now', '+1 hour')),
-        FOREIGN KEY (telegram_id) REFERENCES customers(telegram_id) ON DELETE CASCADE
-    );
-
-    CREATE TABLE IF NOT EXISTS cart (
-        id_cart             INTEGER PRIMARY KEY AUTOINCREMENT,
-        id_customer         INTEGER NOT NULL,
-        id_product          INTEGER NOT NULL,
-        size                TEXT,
-        color               TEXT,
-        quantity            INTEGER NOT NULL DEFAULT 1 CHECK (quantity >= 1 AND quantity <= 10),
-        added_at            TEXT    NOT NULL DEFAULT (datetime('now', 'localtime')),
-        FOREIGN KEY (id_customer) REFERENCES customers(id_customer) ON DELETE CASCADE,
-        FOREIGN KEY (id_product) REFERENCES products(id_product) ON DELETE SET NULL,
-        UNIQUE (id_customer, id_product, size, color)
-    );
-
-    CREATE TABLE IF NOT EXISTS orders (
-        id_order            INTEGER PRIMARY KEY AUTOINCREMENT,
-        id_customer         INTEGER NOT NULL,
-        total_amount_rub    REAL    NOT NULL,
-        currency            TEXT    NOT NULL DEFAULT 'RUB',
-        order_date          TEXT    NOT NULL DEFAULT (datetime('now', 'localtime')),
-        status              TEXT    NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'paid', 'processing_supplier', 'shipped', 'delivered', 'cancelled')),
-        payment_status      TEXT    NOT NULL DEFAULT 'unpaid' CHECK (payment_status IN ('unpaid', 'paid', 'refunded')),
-        payment_method      TEXT,
-        delivery_address    TEXT    NOT NULL,
-        tracking_number     TEXT,
-        admin_note          TEXT,
-        exchange_rate_used  REAL,
-        FOREIGN KEY (id_customer) REFERENCES customers(id_customer) ON DELETE CASCADE
-    );
-
-    CREATE TABLE IF NOT EXISTS order_items (
-        id_item             INTEGER PRIMARY KEY AUTOINCREMENT,
-        id_order            INTEGER NOT NULL,
-        id_product          INTEGER,
-        product_name        TEXT    NOT NULL,
-        product_price_rub   REAL    NOT NULL,
-        size                TEXT,
-        color               TEXT,
-        quantity            INTEGER NOT NULL,
-        subtotal            REAL    NOT NULL,
-        FOREIGN KEY (id_order) REFERENCES orders(id_order) ON DELETE CASCADE,
-        FOREIGN KEY (id_product) REFERENCES products(id_product) ON DELETE SET NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS exchange_rates (
-        id_rate             INTEGER PRIMARY KEY AUTOINCREMENT,
-        rate_rub            REAL    NOT NULL,
-        source              TEXT    DEFAULT 'manual',
-        recorded_at         TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
-    );
-
-    CREATE TABLE IF NOT EXISTS analytics (
-        key                 TEXT    NOT NULL,
-        value               TEXT    NOT NULL,
-        recorded_at         TEXT    NOT NULL DEFAULT (datetime('now', 'localtime')),
-        PRIMARY KEY (key, recorded_at)
-    );
-
-    -- Индексы
-    CREATE INDEX IF NOT EXISTS idx_products_taobao_id ON products(taobao_item_id);
-    CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
-    CREATE INDEX IF NOT EXISTS idx_products_name ON products(name);
-    CREATE INDEX IF NOT EXISTS idx_customers_telegram_id ON customers(telegram_id);
-    CREATE INDEX IF NOT EXISTS idx_user_sessions_telegram_id ON user_sessions(telegram_id);
-    CREATE INDEX IF NOT EXISTS idx_user_sessions_expires_at ON user_sessions(expires_at);
-    CREATE INDEX IF NOT EXISTS idx_cart_customer ON cart(id_customer);
-    CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(id_customer);
-    CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
-    CREATE INDEX IF NOT EXISTS idx_orders_payment_status ON orders(payment_status);
-    CREATE INDEX IF NOT EXISTS idx_orders_date ON orders(order_date);
-    CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(id_order);
-    CREATE INDEX IF NOT EXISTS idx_exchange_rates_recorded_at ON exchange_rates(recorded_at);
-
-    -- Инициализация курса юаня, если пусто
-    cursor.execute("INSERT OR IGNORE INTO exchange_rates (rate_rub, source) VALUES (12.5, 'manual');")
-
-    conn.commit()
-    conn.close()
-    logger.info("База данных инициализирована")
+# Инициализация БД при старте
+if __name__ == '__main__':
+    database.init_db()
 
 
 # =============================================
-# ФУНКЦИИ ДЛЯ РАБОТЫ С КЛИЕНТАМИ
-# =============================================
-
-def register_or_update_customer(message):
-    """Регистрирует или обновляет клиента"""
-    conn = sqlite3.connect(DATABASE)
-    cursor = conn.cursor()
-
-    full_name = f"{message.from_user.first_name} {message.from_user.last_name}".strip() if message.from_user.last_name else message.from_user.first_name
-    username = message.from_user.username
-
-    try:
-        cursor.execute("""
-            INSERT OR REPLACE INTO customers 
-            (telegram_id, full_name, username, updated_at) 
-            VALUES (?, ?, ?, datetime('now', 'localtime'))
-            ON CONFLICT(telegram_id) DO UPDATE SET
-                full_name = excluded.full_name,
-                username = excluded.username,
-                updated_at = excluded.updated_at
-        """, (message.from_user.id, full_name, username))
-        conn.commit()
-    except Exception as e:
-        logger.error("Ошибка регистрации клиента: %s", e)
-    finally:
-        conn.close()
-
-
-def get_customer(telegram_id):
-    """Получает данные клиента"""
-    conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM customers WHERE telegram_id = ?", (telegram_id,))
-    row = cursor.fetchone()
-    conn.close()
-    return dict(row) if row else None
-
-
-# =============================================
-# ФУНКЦИИ ДЛЯ РАБОТЫ С КОРЗИНОЙ
-# =============================================
-
-def clear_expired_sessions():
-    """Удаляет просроченные сессии"""
-    conn = sqlite3.connect(DATABASE)
-    cursor = conn.cursor()
-    cursor.execute("UPDATE user_sessions SET status = 'expired' WHERE expires_at < datetime('now')")
-    conn.commit()
-    conn.close()
-
-
-# =============================================
-# ФУНКЦИИ ДЛЯ РАБОТЫ С ЗАКАЗАМИ
-# =============================================
-
-def save_order_to_db(user_info, order_data):
-    """Сохраняет заказ и позиции в БД"""
-    conn = sqlite3.connect(DATABASE)
-    cursor = conn.cursor()
-
-    try:
-        # Получаем или создаём клиента
-        customer = get_customer(user_info['id'])
-        if not customer:
-            register_or_update_customer_from_info(user_info)
-            customer = get_customer(user_info['id'])
-
-        # Текущий курс
-        cursor.execute("SELECT rate_rub FROM exchange_rates ORDER BY recorded_at DESC LIMIT 1")
-        rate_row = cursor.fetchone()
-        exchange_rate = rate_row[0] if rate_row else 12.5
-
-        # Вставляем заказ
-        cursor.execute("""
-            INSERT INTO orders (
-                id_customer, total_amount_rub, delivery_address, order_date, exchange_rate_used
-            ) VALUES (?, ?, ?, ?, ?)
-        """, (
-            customer['id_customer'],
-            order_data['total'],
-            user_info.get('address', 'Не указан'),
-            order_data['timestamp'],
-            exchange_rate
-        ))
-        order_id = cursor.lastrowid
-
-        # Вставляем позиции
-        for item in order_data['items']:
-            subtotal = item['price'] * item['quantity']
-            cursor.execute("""
-                INSERT INTO order_items (
-                    id_order, id_product, product_name, product_price_rub, size, color, quantity, subtotal
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                order_id,
-                item.get('id_product'),
-                item['name'],
-                item['price'],
-                item.get('size'),
-                item.get('color'),
-                item['quantity'],
-                subtotal
-            ))
-
-        conn.commit()
-        logger.info("Заказ #%s сохранён в БД", order_id)
-        return order_id
-
-    except Exception as e:
-        logger.error("Ошибка сохранения заказа: %s", e)
-        conn.rollback()
-        return None
-    finally:
-        conn.close()
-
-
-def register_or_update_customer_from_info(user_info):
-    """Регистрирует клиента из данных формы"""
-    conn = sqlite3.connect(DATABASE)
-    cursor = conn.cursor()
-    try:
-        cursor.execute("""
-            INSERT OR REPLACE INTO customers 
-            (telegram_id, full_name, phone, delivery_address, city, username, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, datetime('now', 'localtime'))
-            ON CONFLICT(telegram_id) DO UPDATE SET
-                full_name = excluded.full_name,
-                phone = excluded.phone,
-                delivery_address = excluded.delivery_address,
-                city = excluded.city,
-                username = excluded.username,
-                updated_at = excluded.updated_at
-        """, (
-            user_info['id'],
-            user_info.get('name'),
-            user_info.get('phone'),
-            user_info.get('address'),
-            user_info.get('city'),
-            user_info.get('username')
-        ))
-        conn.commit()
-    except Exception as e:
-        logger.error("Ошибка обновления клиента: %s", e)
-    finally:
-        conn.close()
-
-
-def send_admin_notification(user_info, order_data, order_id):
-    """Отправляет уведомление админу"""
-    try:
-        message = (
-            "🔔 НОВЫЙ ЗАКАЗ!\n\n"
-            "👤 Клиент:\n"
-        )
-        message += f"• Имя: {user_info.get('name', user_info.get('first_name', 'Не указано'))}\n"
-        if user_info.get('last_name'):
-            message += f"• Фамилия: {user_info['last_name']}\n"
-        message += f"• Телефон: {user_info.get('phone', 'Не указан')}\n"
-        if user_info.get('email'):
-            message += f"• Email: {user_info['email']}\n"
-        if user_info.get('address'):
-            message += f"• Адрес: {user_info['address']}\n"
-        message += f"• Telegram ID: {user_info['id']}\n"
-        if user_info.get('username'):
-            message += f"• @{user_info['username']}\n"
-
-        message += f"\n📦 Заказ #{order_id}:\n"
-        message += f"• Сумма: {order_data['total']}₽\n"
-        message += f"• Товаров: {len(order_data['items'])}\n"
-        message += f"• Время: {order_data['timestamp']}\n\n"
-        message += "📋 Состав:\n"
-        for i, item in enumerate(order_data['items'], 1):
-            message += f"{i}. {item['name']} - {item['price']}₽ x{item['quantity']}\n"
-
-        bot.send_message(ADMIN_ID, message)
-        logger.info("Уведомление админу отправлено")
-
-    except Exception as e:
-        logger.error("Ошибка отправки уведомления: %s", e)
-
-
-# =============================================
-# ОСНОВНЫЕ ОБРАБОТЧИКИ
+# ОБРАБОТЧИКИ
 # =============================================
 
 @bot.message_handler(commands=['start'])
 def start(message):
     logger.info("/start от %s", message.from_user.id)
-    register_or_update_customer(message)
+    database.register_or_update_customer(
+        message.from_user.id,
+        message.from_user.first_name,
+        message.from_user.last_name,
+        message.from_user.username
+    )
 
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add(types.KeyboardButton('Открыть маркетплейс'))
@@ -398,7 +76,7 @@ def handle_web_app_data(message):
         logger.info("WEB_APP_DATA от %s", message.from_user.id)
         logger.info("Raw data: %s", message.web_app_data.data)
 
-        # Валидация JSON
+        # Валидация
         try:
             data = json.loads(message.web_app_data.data)
         except json.JSONDecodeError:
@@ -431,13 +109,13 @@ def handle_web_app_data(message):
             'timestamp': datetime.now().strftime('%d.%m.%Y %H:%M:%S')
         }
 
-        # Сохраняем заказ
-        order_id = save_order_to_db(full_user_info, order_data)
+        # Сохраняем заказ через БД
+        order_id = database.save_order(full_user_info, order_data)
         if not order_id:
             bot.send_message(message.chat.id, "❌ Ошибка сохранения заказа")
             return
 
-        # Уведомляем админа
+        # Уведомление админу
         send_admin_notification(full_user_info, order_data, order_id)
 
         # Подтверждение клиенту
@@ -454,6 +132,31 @@ def handle_web_app_data(message):
         bot.send_message(message.chat.id, "❌ Ошибка обработки заказа")
 
 
+def send_admin_notification(user_info, order_data, order_id):
+    """Уведомление админа"""
+    try:
+        message = "🔔 НОВЫЙ ЗАКАЗ!\n\n"
+        message += f"👤 {user_info.get('name', user_info.get('first_name', 'Клиент'))}\n"
+        if user_info.get('phone'):
+            message += f"📞 {user_info['phone']}\n"
+        if user_info.get('address'):
+            message += f"🏠 {user_info['address']}\n"
+        message += f"🆔 {user_info['id']}\n"
+        if user_info.get('username'):
+            message += f"• @{user_info['username']}\n"
+
+        message += f"\n📦 Заказ #{order_id}: {order_data['total']}₽ ({len(order_data['items'])} шт)\n"
+        message += "📋 Состав:\n"
+        for i, item in enumerate(order_data['items'], 1):
+            qty = item.get('quantity', 1)
+            message += f"{i}. {item['name']} - {item['price']}₽ x{qty}\n"
+
+        bot.send_message(ADMIN_ID, message)
+        logger.info("Уведомление админу отправлено")
+    except Exception as e:
+        logger.error("Ошибка отправки уведомления: %s", e)
+
+
 # =============================================
 # АДМИН-КОМАНДЫ
 # =============================================
@@ -464,31 +167,26 @@ def show_orders(message):
         bot.send_message(message.chat.id, "❌ Только для администратора")
         return
 
-    conn = sqlite3.connect(DATABASE)
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT o.id_order, o.total_amount_rub, o.order_date, c.full_name, c.phone
-        FROM orders o
-        JOIN customers c ON o.id_customer = c.id_customer
-        ORDER BY o.order_date DESC
-        LIMIT 10
-    """)
-    rows = cursor.fetchall()
-    conn.close()
-
-    if not rows:
+    orders = database.get_recent_orders(10)
+    if not orders:
         bot.send_message(message.chat.id, "📭 Нет заказов")
         return
 
     text = "📦 Последние заказы:\n\n"
-    for row in rows:
-        text += f"#{row[0]} | {row[1]}₽ | {row[2]}\n👤 {row[3]} | 📞 {row[4]}\n➖➖➖\n"
+    for o in orders:
+        text += (
+            f"#{o['id_order']} | {o['total_amount_rub']}₽ | {o['order_date']}\n"
+            f"👤 {o['full_name']} | 📞 {o['phone'] or 'нет'}\n"
+            f"📍 {o['delivery_address'][:30]}...\n"
+            f"📊 {o['status']}\n"
+            "➖➖➖\n"
+        )
     bot.send_message(message.chat.id, text)
 
 
 @bot.message_handler(commands=['status'])
 def status(message):
-    conn = sqlite3.connect(DATABASE)
+    conn = sqlite3.connect(database.DATABASE)
     cursor = conn.cursor()
     cursor.execute("SELECT COUNT(*) FROM customers")
     total_users = cursor.fetchone()[0]
@@ -500,7 +198,7 @@ def status(message):
         f"🤖 Статус бота\n"
         f"👥 Пользователей: {total_users}\n"
         f"📦 Заказов: {total_orders}\n"
-        f"🕒 Время: {datetime.now().strftime('%H:%M:%S')}"
+        f"🕒 {datetime.now().strftime('%H:%M:%S')}"
     )
     bot.send_message(message.chat.id, info)
 
@@ -510,7 +208,7 @@ def help_command(message):
     help_text = """
 🤖 AI Taobao Assistant - Помощь
 
-/start - Запустить бота
+/start - Запустить
 /help - Помощь
 /status - Статус
 /orders - Заказы (админ)
@@ -523,7 +221,6 @@ def help_command(message):
 # =============================================
 
 if __name__ == '__main__':
-    init_db()
     logger.info("=" * 50)
     logger.info("Бот запущен")
     logger.info("Админ ID: %s", ADMIN_ID)
